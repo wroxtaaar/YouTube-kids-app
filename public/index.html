@@ -196,14 +196,26 @@
 
   /* ---------- shorts player ---------- */
   var sc=$('sscroll'),io=null;
+  var baseShorts=null;
+  function addItem(v,i){
+    var d=document.createElement('div');d.className='si';d.dataset.i=i;
+    d.innerHTML='<div class="sf" style="background-image:url(\''+esc(v.thumb)+'\')"><div class="cap"><span>'+esc(chan(v))+'</span><b>'+esc(v.title)+'</b></div></div>';
+    sc.appendChild(d);if(io)io.observe(d);
+  }
+  // endless scroll: when near the end, append another shuffled round of the same Shorts
+  function appendMore(){
+    if(!baseShorts||!baseShorts.length)return;
+    var round=baseShorts.slice();
+    for(var i=round.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=round[i];round[i]=round[j];round[j]=t}
+    // avoid the same Short twice in a row at the seam
+    if(round.length>1&&round[0].id===shorts[shorts.length-1].id){round.push(round.shift())}
+    round.forEach(function(v){shorts.push(v);addItem(v,shorts.length-1)});
+  }
   function buildShorts(){
+    if(!baseShorts)baseShorts=shorts.slice();
     sc.innerHTML='';
     $('sempty').style.display=shorts.length?'none':'grid';sc.style.display=shorts.length?'block':'none';
-    shorts.forEach(function(v,i){
-      var d=document.createElement('div');d.className='si';d.dataset.i=i;
-      d.innerHTML='<div class="sf" style="background-image:url(\''+esc(v.thumb)+'\')"><div class="cap"><span>'+esc(chan(v))+'</span><b>'+esc(v.title)+'</b></div></div>';
-      sc.appendChild(d);
-    });
+    shorts.forEach(function(v,i){addItem(v,i)});
     if(io)io.disconnect();
     io=new IntersectionObserver(function(es){es.forEach(function(e){
       var sf=e.target.firstChild;
@@ -215,12 +227,13 @@
   function setPlaying(item){
     var sf=item.firstChild;if(sf.querySelector('iframe'))return;
     var v=shorts[+item.dataset.i];cur=+item.dataset.i;
+    if(cur>=shorts.length-3)appendMore();
     [].forEach.call(sc.querySelectorAll('iframe'),function(f){f.remove()});
     var f=document.createElement('iframe');
     f.src='https://www.youtube-nocookie.com/embed/'+v.id+'?autoplay=1&loop=1&playlist='+v.id+'&controls=0&rel=0&playsinline=1&modestbranding=1&iv_load_policy=3&fs=0&disablekb=1';
     f.allow='autoplay; encrypted-media';sf.insertBefore(f,sf.firstChild);
   }
-  function step(d){var n=Math.max(0,Math.min(shorts.length-1,(cur<0?0:cur)+d));var el=sc.children[n];if(el)el.scrollIntoView({behavior:'smooth',block:'start'})}
+  function step(d){var n=Math.max(0,(cur<0?0:cur)+d);if(n>=shorts.length-3)appendMore();n=Math.min(n,shorts.length-1);var el=sc.children[n];if(el)el.scrollIntoView({behavior:'smooth',block:'start'})}
   $('up').onclick=function(){step(-1)};$('down').onclick=function(){step(1)};
   document.addEventListener('keydown',function(e){
     if(e.key==='Escape'&&watch.classList.contains('on')){history.back();return}
