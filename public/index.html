@@ -20,6 +20,14 @@
   .dur{position:absolute;right:8px;bottom:8px;background:rgba(0,0,0,.75);color:#fff;font-size:12px;padding:2px 6px;border-radius:6px}
   .home{position:absolute;left:8px;top:8px;background:var(--accent2);color:#222;font-weight:800;font-size:12px;padding:3px 8px;border-radius:8px}
   .title{padding:10px 12px 14px;font-size:16px;font-weight:700;line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .strip{grid-column:1/-1;background:#ffe3e3;border-radius:18px;padding:10px 0 14px}
+  .strip h2{margin:0 14px 8px;font-size:18px}
+  .row{display:flex;gap:12px;overflow-x:auto;padding:0 14px;scroll-snap-type:x proximity}
+  .short{flex:0 0 150px;scroll-snap-align:start;background:#fff;border:0;border-radius:14px;overflow:hidden;padding:0;cursor:pointer;font:inherit;color:inherit;text-align:left}
+  .short .st{aspect-ratio:9/16;background:#ccc center/cover no-repeat;position:relative}
+  .short .st::after{content:"";position:absolute;inset:0;background:linear-gradient(transparent 60%,rgba(0,0,0,.55))}
+  .short .sn{padding:6px 8px 8px;font-size:13px;font-weight:700;line-height:1.2;height:2.6em;overflow:hidden}
+  #stage iframe.tall{width:auto;height:calc(100vh - 100px);max-width:100%;aspect-ratio:9/16}
   #empty,#sentinel{text-align:center;padding:40px;font-size:18px}
   #modal{position:fixed;inset:0;background:rgba(0,0,0,.92);display:none;flex-direction:column;z-index:10}
   #modal.on{display:flex}
@@ -49,16 +57,24 @@
       +'</div><div class="title">'+esc(v.title)+'</div>';
     b.onclick=function(){open(v)};return b;
   }
+  function strip(v){
+    var d=document.createElement('div');d.className='strip';d.innerHTML='<h2>⚡ Shorts</h2>';
+    var r=document.createElement('div');r.className='row';
+    v.items.forEach(function(x){var b=document.createElement('button');b.className='short';
+      b.innerHTML='<div class="st" style="background-image:url(\''+esc(x.thumb)+'\')"></div><div class="sn">'+esc(x.title)+'</div>';
+      b.onclick=function(){open(x)};r.appendChild(b)});
+    d.appendChild(r);return d;
+  }
   function more(){
     var end=Math.min(shown+PAGE,all.length);
-    for(;shown<end;shown++)feed.appendChild(card(all[shown]));
+    for(;shown<end;shown++)feed.appendChild(all[shown].kind==='shorts'?strip(all[shown]):card(all[shown]));
     sent.style.display=shown>=all.length?'none':'block';
   }
   function open(v){
     stage.innerHTML='';var el;
     if(v.kind==='youtube'){el=document.createElement('iframe');
       el.src='https://www.youtube-nocookie.com/embed/'+v.id+'?autoplay=1&rel=0&modestbranding=1&playsinline=1&iv_load_policy=3';
-      el.allow='autoplay; encrypted-media; picture-in-picture; fullscreen';}
+      el.allow='autoplay; encrypted-media; picture-in-picture; fullscreen';if(v.short)el.className='tall';}
     else if(v.provider==='direct'){el=document.createElement('video');el.src=v.src;el.controls=true;el.autoplay=true;el.playsInline=true;}
     else{el=document.createElement('iframe');el.src=v.embed;el.allow='autoplay; fullscreen';}
     el.setAttribute('allowfullscreen','');stage.appendChild(el);modal.classList.add('on');

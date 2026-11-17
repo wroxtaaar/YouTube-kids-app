@@ -27,7 +27,7 @@ async function buildFeed() {
       const id = L.youtubeId(it.value);
       if (!id) return [];
       const meta = await cached('yt:' + id, () => L.oembedTitle(id));
-      return [{ kind: 'youtube', id, title: meta ? meta.title : 'Video', channel: meta ? meta.channel : '',
+      return [{ kind: 'youtube', id, short: /\/shorts\//.test(it.value), title: meta ? meta.title : 'Video', channel: meta ? meta.channel : '',
         thumb: `https://i.ytimg.com/vi/${id}/hqdefault.jpg` }];
     }
     const h = L.homeVideo(it.url, it.title);
@@ -47,15 +47,17 @@ http.createServer(async (req, res) => {
     try {
       const feed = await buildFeed();
       const seed = parseInt(url.searchParams.get('seed') || '0', 10) || Date.now();
-      const home = feed.filter((v) => v.kind === 'home');
-      const rest = L.shuffle(feed.filter((v) => v.kind !== 'home'), seed);
-      // weave home videos near the top: one after every 3 other videos
-      const out = []; let hi = 0;
-      L.shuffle(home, seed).forEach(() => {});
+      const home = L.shuffle(feed.filter((v) => v.kind === 'home'), seed);
+      const rest = L.shuffle(feed.filter((v) => v.kind !== 'home' && !v.short), seed);
+      const shorts = L.shuffle(feed.filter((v) => v.short), seed + 1);
+      // weave: a home video after every 3 videos, a strip of 6 Shorts after every 8
+      const out = []; let hi = 0, si = 0;
       for (let i = 0; i < rest.length || hi < home.length; i++) {
         if (hi < home.length && i % 3 === 0) out.push(home[hi++]);
         if (i < rest.length) out.push(rest[i]);
+        if (i % 8 === 3 && si < shorts.length) { out.push({ kind: 'shorts', id: 'sr' + si, items: shorts.slice(si, si + 6) }); si += 6; }
       }
+      while (si < shorts.length) { out.push({ kind: 'shorts', id: 'sr' + si, items: shorts.slice(si, si + 6) }); si += 6; }
       res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'no-store' });
       res.end(JSON.stringify(out));
     } catch (e) {

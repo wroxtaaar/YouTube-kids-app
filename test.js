@@ -6,3 +6,5 @@ assert.equal(L.homeVideo('https://mega.nz/file/AbC#kEy').embed,'https://mega.nz/
 const html='<script>var ytInitialData = '+JSON.stringify({a:[{videoRenderer:{videoId:'x'.repeat(11),title:{runs:[{text:'T&J'}]},lengthText:{simpleText:'5:00'},ownerText:{runs:[{text:'Ch'}]}}}]})+';</script>';
 assert.equal(L.parseSearchHtml(html,5)[0].title,'T&J');
 console.log('ok');
+assert.equal(L.secs('0:45'),45);assert.equal(L.secs('1:02:03'),3723);
+console.log('ok2');

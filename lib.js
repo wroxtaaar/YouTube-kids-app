@@ -52,6 +52,12 @@ function walk(node, out) {
   for (const k of Object.keys(node)) walk(node[k], out);
 }
 
+function secs(d) {
+  const p = String(d || '').split(':').map(Number);
+  if (!p.length || p.some(isNaN)) return 0;
+  return p.reduce((a, n) => a * 60 + n, 0);
+}
+
 function parseSearchHtml(html, limit) {
   const m = html.match(/var ytInitialData\s*=\s*(\{.*?\});\s*<\/script>/s);
   if (!m) return [];
@@ -71,6 +77,7 @@ function parseSearchHtml(html, limit) {
       title: ((v.title && v.title.runs && v.title.runs.map((r) => r.text).join('')) || 'Video'),
       channel: v.ownerText && v.ownerText.runs ? v.ownerText.runs[0].text : '',
       duration: v.lengthText.simpleText || '',
+      short: secs(v.lengthText.simpleText) > 0 && secs(v.lengthText.simpleText) <= 60,
       thumb: `https://i.ytimg.com/vi/${v.videoId}/hqdefault.jpg`,
     });
     if (res.length >= limit) break;
@@ -78,8 +85,8 @@ function parseSearchHtml(html, limit) {
   return res;
 }
 
-async function searchScrape(q, limit) {
-  const r = await fetch('https://www.youtube.com/results?search_query=' + encodeURIComponent(q) + '&sp=EgIQAQ%253D%253D', {
+async function searchScrape(q, limit, sp) {
+  const r = await fetch('https://www.youtube.com/results?search_query=' + encodeURIComponent(q) + '&sp=' + (sp || 'EgIQAQ%253D%253D'), {
     headers: { 'user-agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/124 Safari/537.36',
       'accept-language': 'en-US,en;q=0.9', cookie: 'CONSENT=YES+1; SOCS=CAI' },
   });
@@ -87,22 +94,35 @@ async function searchScrape(q, limit) {
   return parseSearchHtml(await r.text(), limit);
 }
 
-async function searchApi(q, limit, key) {
+async function searchApi(q, limit, key, short) {
   const u = new URL('https://www.googleapis.com/youtube/v3/search');
   u.search = new URLSearchParams({ part: 'snippet', type: 'video', maxResults: String(Math.min(limit, 50)),
-    q, key, safeSearch: 'strict', videoEmbeddable: 'true' });
+    q: short ? q + ' #shorts' : q, key, safeSearch: 'strict', videoEmbeddable: 'true', ...(short ? { videoDuration: 'short' } : {}) });
   const r = await fetch(u);
   if (!r.ok) throw new Error('YouTube API HTTP ' + r.status);
   const j = await r.json();
   return (j.items || []).map((i) => ({
-    kind: 'youtube', id: i.id.videoId, title: i.snippet.title, channel: i.snippet.channelTitle, duration: '',
+    kind: 'youtube', id: i.id.videoId, title: i.snippet.title, channel: i.snippet.channelTitle, duration: '', short: !!short,
     thumb: `https://i.ytimg.com/vi/${i.id.videoId}/hqdefault.jpg`,
   }));
 }
 
 async function searchKeyword(q, limit, key) {
-  if (key) { try { return await searchApi(q, limit, key); } catch (e) { console.error(e.message); } }
-  return searchScrape(q, limit);
+  // regular videos + a second search for Shorts (videos of 60s or less)
+  const normal = async () => {
+    if (key) { try { return await searchApi(q, limit, key, false); } catch (e) { console.error(e.message); } }
+    return searchScrape(q, limit);
+  };
+  const shorts = async () => {
+    try {
+      if (key) return await searchApi(q, limit, key, true);
+      const r = await searchScrape(q + ' shorts', limit * 2, 'EgQQARgB');
+      return r.filter((v) => v.short);
+    } catch (e) { console.error('shorts', e.message); return []; }
+  };
+  const [a, b] = await Promise.all([normal().catch(() => []), shorts()]);
+  const seen = new Set();
+  return [...a, ...b.map((v) => ({ ...v, short: true }))].filter((v) => !seen.has(v.id) && seen.add(v.id));
 }
 
 async function oembedTitle(id) {
@@ -122,4 +142,4 @@ function shuffle(a, seed) {
   return a;
 }
 
-module.exports = { parseContent, youtubeId, homeVideo, parseSearchHtml, searchKeyword, oembedTitle, shuffle };
+module.exports = { secs, parseContent, youtubeId, homeVideo, parseSearchHtml, searchKeyword, oembedTitle, shuffle };
