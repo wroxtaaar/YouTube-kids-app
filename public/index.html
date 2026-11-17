@@ -164,20 +164,41 @@
       b.onclick=function(){goShorts(shorts.indexOf(x)>=0?shorts.indexOf(x):0)};r.appendChild(b)});
     d.appendChild(r);return d;
   }
+  function shuf(a){a=a.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t}return a}
+  // a fresh shuffled round: all videos mixed, a Shorts strip every 8 cards
+  function makeRound(){
+    var vids=shuf(all.filter(function(v){return v.kind!=='shorts'&&(filter==='all'||v.kind==='home')}));
+    if(filter!=='all'||!baseShorts||!baseShorts.length)return vids;
+    var pool=shuf(baseShorts),pi=0,out=[];
+    vids.forEach(function(v,i){
+      out.push(v);
+      if(i%8===3){var it=[];for(var k=0;k<6;k++){if(pi>=pool.length){pool=shuf(baseShorts);pi=0}it.push(pool[pi++])}
+        out.push({kind:'shorts',id:'sr'+Math.random(),items:it})}
+    });
+    return out;
+  }
   function more(){
+    if(shown>=list.length&&list.length){var r=makeRound();if(r.length)list=list.concat(r)}
     var end=Math.min(shown+PAGE,list.length);
     for(;shown<end;shown++)feed.appendChild(list[shown].kind==='shorts'?strip(list[shown]):card(list[shown]));
-    sent.style.display=shown>=list.length?'none':'block';
+    sent.style.display=list.length?'block':'none';
   }
   function applyFilter(){
     feed.innerHTML='';shown=0;
     list=filter==='home'?all.filter(function(v){return v.kind==='home'}):all;
-    empty.hidden=list.length>0;$('home').scrollTop=0;more();
+    empty.hidden=list.length>0;$('home').scrollTop=0;more();fill();
   }
   document.querySelectorAll('.chip').forEach(function(c){c.onclick=function(){
     document.querySelectorAll('.chip').forEach(function(x){x.classList.remove('on')});c.classList.add('on');
     filter=c.dataset.f;applyFilter()}});
-  new IntersectionObserver(function(e){if(e[0].isIntersecting)more()},{root:$('home'),rootMargin:'800px'}).observe(sent);
+  // keep adding cards while the end of the feed is near the viewport (endless)
+  function fill(){
+    var h=$('home'),n=0;
+    while(n++<8&&list.length&&sent.getBoundingClientRect().top<h.getBoundingClientRect().bottom+800){var before=feed.children.length;more();if(feed.children.length===before)break}
+  }
+  $('home').addEventListener('scroll',fill,{passive:true});
+  window.addEventListener('resize',fill);
+  new IntersectionObserver(function(e){if(e[0].isIntersecting)fill()},{root:$('home'),rootMargin:'800px'}).observe(sent);
 
   /* ---------- watch (normal videos) ---------- */
   function play(v){
@@ -262,7 +283,7 @@
   /* ---------- load ---------- */
   fetch('/api/feed?seed='+seed).then(function(r){return r.json()}).then(function(d){
     all=d;shorts=[];d.forEach(function(v){if(v.kind==='shorts')shorts=shorts.concat(v.items)});
-    ready=true;applyFilter();buildShorts();route();
+    baseShorts=shorts.slice();ready=true;applyFilter();buildShorts();route();
   }).catch(function(){empty.hidden=false});
 })();
 </script>

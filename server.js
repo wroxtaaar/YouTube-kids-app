@@ -19,9 +19,18 @@ async function cached(key, fn) {
   catch (e) { console.error(key, e.message); return hit ? hit.v : null; }
 }
 
+// run at most n tasks at once, so many keywords don't hammer YouTube
+async function mapLimit(arr, n, fn) {
+  const out = new Array(arr.length); let next = 0;
+  await Promise.all(Array.from({ length: Math.min(n, arr.length) }, async () => {
+    while (next < arr.length) { const i = next++; try { out[i] = await fn(arr[i]); } catch (e) { console.error(e.message); out[i] = []; } }
+  }));
+  return out;
+}
+
 async function buildFeed() {
   const items = L.parseContent(fs.readFileSync(CONTENT_FILE, 'utf8'));
-  const lists = await Promise.all(items.map(async (it) => {
+  const lists = await mapLimit(items, 4, async (it) => {
     if (it.type === 'keyword') return (await cached('kw:' + it.value, () => L.searchKeyword(it.value, PER_KEYWORD, API_KEY))) || [];
     if (it.type === 'youtube') {
       const id = L.youtubeId(it.value);
@@ -32,7 +41,7 @@ async function buildFeed() {
     }
     const h = L.homeVideo(it.url, it.title);
     return h ? [{ ...h, id: 'h' + Buffer.from(it.url).toString('base64url').slice(0, 24) }] : [];
-  }));
+  });
   // de-dupe by id
   const seen = new Set();
   return lists.flat().filter((v) => !seen.has(v.id) && seen.add(v.id));
