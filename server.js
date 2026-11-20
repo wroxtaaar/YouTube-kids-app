@@ -52,6 +52,12 @@ const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '
 http.createServer(async (req, res) => {
   const url = new URL(req.url, 'http://x');
   if (url.pathname === '/healthz') { res.end('ok'); return; }
+  if (url.pathname === '/version') {
+    const has = (f) => fs.existsSync(path.join(PUBLIC, f));
+    res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'no-store' });
+    res.end(JSON.stringify({ commit: (process.env.RENDER_GIT_COMMIT || 'unknown').slice(0, 7), manifest: has('manifest.webmanifest'), sw: has('sw.js'), icon192: has('icon-192.png'), public: fs.readdirSync(PUBLIC) }));
+    return;
+  }
   if (url.pathname === '/api/feed') {
     try {
       const feed = await buildFeed();
