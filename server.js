@@ -47,7 +47,7 @@ async function buildFeed() {
   return lists.flat().filter((v) => !seen.has(v.id) && seen.add(v.id));
 }
 
-const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.json': 'application/json', '.ico': 'image/x-icon' };
+const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.json': 'application/json', '.ico': 'image/x-icon', '.png': 'image/png', '.webmanifest': 'application/manifest+json' };
 
 http.createServer(async (req, res) => {
   const url = new URL(req.url, 'http://x');
@@ -79,7 +79,7 @@ http.createServer(async (req, res) => {
   if (!file.startsWith(PUBLIC)) { res.writeHead(403); res.end(); return; }
   fs.readFile(file, (err, data) => {
     if (err) { res.writeHead(404); res.end('Not found'); return; }
-    res.writeHead(200, { 'content-type': TYPES[path.extname(file)] || 'application/octet-stream' });
+    res.writeHead(200, { 'content-type': TYPES[path.extname(file)] || 'application/octet-stream', 'cache-control': /sw\.js$|\.html$|\.webmanifest$/.test(file) ? 'no-cache' : 'public, max-age=86400' });
     res.end(data);
   });
 }).listen(PORT, '0.0.0.0', () => console.log('Kids feed on :' + PORT));
