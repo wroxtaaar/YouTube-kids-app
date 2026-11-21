@@ -1,0 +1,16 @@
+# ==== PARENT CONTROL FILE ====
+# Edit this file on GitHub, commit, and Render redeploys. The child app feed updates.
+# One entry per line. Lines starting with # are ignored.
+#
+#   keyword: <search words>     -> pulls videos from YouTube for those words
+#   youtube: <video link>       -> one specific YouTube video
+#   home: <link> | <title>      -> your own video (Google Drive, Mega, or direct .mp4 link)
+#
+# Google Drive: share the file as "Anyone with the link", paste the normal share link.
+# Mega: paste the file link (https://mega.nz/file/ID#KEY).
+
+keyword: tom and jerry
+keyword: the road runner show
+
+# youtube: https://www.youtube.com/watch?v=dQw4w9WgXcQ
+# home: https://drive.google.com/file/d/FILE_ID/view | Birthday 2026
