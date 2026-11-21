@@ -2,7 +2,7 @@ FROM node:22-alpine
 WORKDIR /app
 ENV NODE_ENV=production
 COPY package.json ./
-COPY lib.js server.js content.txt ./
+COPY lib.js store.js server.js content.txt ./
 COPY public ./public
 USER node
 EXPOSE 3000

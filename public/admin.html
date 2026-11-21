@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<meta name="color-scheme" content="light dark">
+<title>KidTube – Parent</title>
+<style>
+  :root{--bg:#f6f6f8;--card:#fff;--ink:#111;--ink2:#667;--line:#e3e3e8;--accent:#ff7a00;--ok:#1a8f3c;--bad:#d93025}
+  @media (prefers-color-scheme:dark){:root{--bg:#0f0f0f;--card:#1b1b1d;--ink:#f1f1f1;--ink2:#9a9aa5;--line:#333;--ok:#4cc46f;--bad:#ff6b60}}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:Roboto,Arial,system-ui,sans-serif;background:var(--bg);color:var(--ink);padding-bottom:90px}
+  header{display:flex;align-items:center;gap:10px;padding:14px 16px;font-weight:700;font-size:19px}
+  header i{width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#ffb300,#ff6d00);display:grid;place-items:center}
+  header i::after{content:"";border-left:7px solid #fff;border-top:4.5px solid transparent;border-bottom:4.5px solid transparent;margin-left:2px}
+  header a{margin-left:auto;font-size:14px;font-weight:500;color:var(--accent);text-decoration:none}
+  main{max-width:720px;margin:0 auto;padding:0 12px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin:0 0 14px}
+  h2{margin:0 0 4px;font-size:17px}
+  p.h{margin:0 0 12px;color:var(--ink2);font-size:13px;line-height:1.4}
+  .add{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+  input,button,textarea{font:inherit}
+  input{flex:1 1 160px;min-width:0;padding:11px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink)}
+  input:focus{outline:2px solid var(--accent);border-color:transparent}
+  .btn{padding:11px 16px;border:0;border-radius:10px;background:var(--accent);color:#fff;font-weight:700;cursor:pointer}
+  .btn:disabled{opacity:.5}
+  .list{display:flex;flex-direction:column;gap:8px}
+  .item{display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--bg)}
+  .item img{width:80px;height:45px;object-fit:cover;border-radius:6px;background:#ccc;flex:none}
+  .item .tx{flex:1;min-width:0}
+  .item .tx b{display:block;font-weight:500;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .item .tx small{color:var(--ink2);font-size:12px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .x{border:0;background:none;color:var(--bad);font-size:20px;cursor:pointer;padding:4px 8px;border-radius:8px}
+  .x:hover{background:rgba(217,48,37,.12)}
+  .tag{font-size:11px;background:var(--accent);color:#fff;border-radius:6px;padding:1px 6px;margin-left:6px}
+  .none{color:var(--ink2);font-size:14px;padding:4px 2px}
+  #msg{font-size:14px;margin:0 2px 12px;min-height:18px}
+  #msg.err{color:var(--bad)}#msg.ok{color:var(--ok)}
+  #bar{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--line);padding:12px;display:flex;gap:10px;align-items:center;justify-content:center;padding-bottom:calc(12px + env(safe-area-inset-bottom))}
+  #bar .st{color:var(--ink2);font-size:14px}
+  #login{max-width:360px;margin:12vh auto;padding:0 16px;text-align:center}
+  #login .add{justify-content:center}
+  .hidden{display:none!important}
+</style>
+</head>
+<body>
+<header><i></i>Parent controls<a href="/">Open KidTube →</a></header>
+
+<div id="login" class="hidden">
+  <div class="card">
+    <h2>Parent login</h2>
+    <p class="h">Enter the admin password to change what appears in the feed.</p>
+    <form class="add" id="lf"><input id="pw" type="password" autocomplete="current-password" placeholder="Password" required><button class="btn">Sign in</button></form>
+    <div id="lmsg" class="none"></div>
+  </div>
+</div>
+
+<main id="app" class="hidden">
+  <div id="msg"></div>
+
+  <section class="card">
+    <h2>🔎 Keywords</h2>
+    <p class="h">KidTube finds videos and Shorts for each phrase, like “tom and jerry”.</p>
+    <form class="add" id="kf"><input id="kin" placeholder="Add a keyword…" autocapitalize="none"><button class="btn">Add</button></form>
+    <div class="list" id="klist"></div>
+  </section>
+
+  <section class="card">
+    <h2>▶️ Specific videos &amp; Shorts</h2>
+    <p class="h">Paste a YouTube link (watch, youtu.be or Shorts links all work).</p>
+    <form class="add" id="yf"><input id="yin" type="url" inputmode="url" placeholder="https://youtube.com/…"><button class="btn" id="ybtn">Add</button></form>
+    <div class="list" id="ylist"></div>
+  </section>
+
+  <section class="card">
+    <h2>🏠 Home videos</h2>
+    <p class="h">Google Drive (shared as “Anyone with the link”), Mega file link, or a direct .mp4 link.</p>
+    <form class="add" id="hf"><input id="hin" type="url" inputmode="url" placeholder="Video link" required><input id="htitle" placeholder="Title (e.g. Birthday 2026)"><button class="btn">Add</button></form>
+    <div class="list" id="hlist"></div>
+  </section>
+</main>
+
+<div id="bar" class="hidden"><span class="st" id="st">No changes</span><button class="btn" id="save" disabled>Save changes</button></div>
+
+<script>
+(function(){
+  var $=function(i){return document.getElementById(i)};
+  var pw=sessionStorage.getItem('kt_pw')||'';
+  var kw=[],yt=[],home=[],dirty=false,titles={};
+  function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+  function say(t,k){var m=$('msg');m.textContent=t||'';m.className=k||''}
+  function api(path,opt){opt=opt||{};opt.headers=Object.assign({authorization:'Bearer '+pw},opt.headers||{});
+    return fetch(path,opt).then(function(r){return r.json().catch(function(){return{}}).then(function(j){if(!r.ok){var e=new Error(j.error||('Error '+r.status));e.status=r.status;throw e}return j})})}
+  function setDirty(d){dirty=d;$('save').disabled=!d;$('st').textContent=d?'Unsaved changes':'All saved'}
+
+  function parse(text){
+    kw=[];yt=[];home=[];
+    String(text).split(/\r?\n/).forEach(function(raw){
+      var l=raw.trim();if(!l||l[0]==='#')return;
+      var m=l.match(/^(keyword|youtube|home)\s*:\s*(.+)$/i);if(!m)return;
+      var t=m[1].toLowerCase(),v=m[2].trim();
+      if(t==='keyword')kw.push(v);
+      else if(t==='youtube')yt.push(v);
+      else{var p=v.split('|');home.push({url:p[0].trim(),title:p.slice(1).join('|').trim()})}
+    });
+  }
+  function serialize(){
+    var o=['# Managed from the /admin page. You can still edit this file by hand.','#   keyword: <words>   youtube: <link>   home: <link> | <title>',''];
+    kw.forEach(function(k){o.push('keyword: '+k)});if(kw.length)o.push('');
+    yt.forEach(function(u){o.push('youtube: '+u)});if(yt.length)o.push('');
+    home.forEach(function(h){o.push('home: '+h.url+(h.title?' | '+h.title:''))});
+    return o.join('\n')+'\n';
+  }
+
+  function render(){
+    $('klist').innerHTML=kw.length?'':'<div class="none">No keywords yet.</div>';
+    kw.forEach(function(k,i){var d=document.createElement('div');d.className='item';
+      d.innerHTML='<div class="tx"><b>'+esc(k)+'</b></div><button class="x" aria-label="Remove">✕</button>';
+      d.querySelector('.x').onclick=function(){kw.splice(i,1);setDirty(true);render()};$('klist').appendChild(d)});
+    $('ylist').innerHTML=yt.length?'':'<div class="none">No specific videos yet.</div>';
+    yt.forEach(function(u,i){var t=titles[u]||{};var d=document.createElement('div');d.className='item';
+      d.innerHTML=(t.thumb?'<img src="'+esc(t.thumb)+'" alt="">':'<img alt="">')+'<div class="tx"><b>'+esc(t.title||u)+(/\/shorts\//.test(u)?'<span class="tag">Short</span>':'')+'</b><small>'+esc(t.channel||u)+'</small></div><button class="x" aria-label="Remove">✕</button>';
+      d.querySelector('.x').onclick=function(){yt.splice(i,1);setDirty(true);render()};$('ylist').appendChild(d);
+      if(!titles[u]&&!t.pending){t.pending=true;titles[u]=t;api('/api/admin/title?url='+encodeURIComponent(u)).then(function(j){titles[u]=j;render()}).catch(function(){titles[u]={title:'',channel:'(could not load details)'};render()})}});
+    $('hlist').innerHTML=home.length?'':'<div class="none">No home videos yet.</div>';
+    home.forEach(function(h,i){var d=document.createElement('div');d.className='item';
+      d.innerHTML='<div class="tx"><b>'+esc(h.title||'Home video')+'</b><small>'+esc(h.url)+'</small></div><button class="x" aria-label="Remove">✕</button>';
+      d.querySelector('.x').onclick=function(){home.splice(i,1);setDirty(true);render()};$('hlist').appendChild(d)});
+  }
+
+  $('kf').onsubmit=function(e){e.preventDefault();var v=$('kin').value.trim();if(!v)return;
+    if(kw.some(function(k){return k.toLowerCase()===v.toLowerCase()})){say('That keyword is already there.','err');return}
+    kw.push(v);$('kin').value='';say('');setDirty(true);render()};
+  $('yf').onsubmit=function(e){e.preventDefault();var v=$('yin').value.trim();if(!v)return;
+    $('ybtn').disabled=true;say('Checking the link…');
+    api('/api/admin/title?url='+encodeURIComponent(v)).then(function(j){
+      var norm=v;if(yt.some(function(u){return u===norm})){say('Already added.','err');return}
+      titles[norm]=j;yt.push(norm);$('yin').value='';say('Added “'+(j.title||'video')+'”','ok');setDirty(true);render()
+    }).catch(function(er){say(er.status===404?'That doesn’t look like a YouTube link.':er.message,'err')}).then(function(){$('ybtn').disabled=false})};
+  $('hf').onsubmit=function(e){e.preventDefault();var u=$('hin').value.trim();if(!u)return;
+    if(!/drive\.google\.com|mega\.nz|\.(mp4|webm|ogg|mov)(\?|$)/i.test(u)){say('Use a Google Drive, Mega or direct .mp4 link.','err');return}
+    home.push({url:u,title:$('htitle').value.replace(/\|/g,'-').trim()});$('hin').value='';$('htitle').value='';say('');setDirty(true);render()};
+
+  $('save').onclick=function(){
+    $('save').disabled=true;$('st').textContent='Saving…';
+    api('/api/admin/content',{method:'PUT',headers:{'content-type':'application/json'},body:JSON.stringify({text:serialize()})})
+      .then(function(){setDirty(false);say('Saved! The feed updates within about 30 seconds.','ok')})
+      .catch(function(er){setDirty(true);say(er.message,'err')});
+  };
+  window.addEventListener('beforeunload',function(e){if(dirty){e.preventDefault();e.returnValue=''}});
+
+  function show(loggedIn){$('login').classList.toggle('hidden',loggedIn);$('app').classList.toggle('hidden',!loggedIn);$('bar').classList.toggle('hidden',!loggedIn)}
+  function load(){
+    return api('/api/admin/content').then(function(j){
+      parse(j.text);show(true);render();setDirty(false);
+      if(!j.writable)say('Saving is not set up yet: add a GITHUB_TOKEN environment variable on Render (see README).','err');
+      else if(j.source!=='github')say('Heads-up: the feed is still reading the built-in file. Check that the “content” branch exists on GitHub.','err');
+    });
+  }
+  $('lf').onsubmit=function(e){e.preventDefault();pw=$('pw').value;$('lmsg').textContent='';
+    load().then(function(){sessionStorage.setItem('kt_pw',pw)}).catch(function(er){$('lmsg').textContent=er.message})};
+  if(pw)load().catch(function(){sessionStorage.removeItem('kt_pw');pw='';show(false)});else show(false);
+})();
+</script>
+</body>
+</html>
